@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Watchlist – Anime, Series & K-Dramas</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f0d1a;--card:#1a1730;--card2:#241f42;--tx:#f3f0ff;--mut:#9a94c4;--acc:#ff5c8a;--ok:#4ade80;--warn:#fbbf24;--bd:#2f2a55}
+*{box-sizing:border-box;margin:0}
+body{font-family:Outfit,system-ui,sans-serif;background:radial-gradient(1000px 500px at 80% -10%,#3a1d5c55,transparent),var(--bg);color:var(--tx);min-height:100vh;padding:18px 16px 60px;max-width:1000px;margin:auto}
+h1{font-size:28px;font-weight:800;letter-spacing:-.5px}
+h1 span{color:var(--acc)}
+.sub{color:var(--mut);font-size:14px;margin:2px 0 14px}
+.tabs,.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+button,select,input{font:inherit;color:var(--tx)}
+.tab,.chip{white-space:nowrap;background:var(--card);border:1px solid var(--bd);padding:8px 14px;border-radius:99px;cursor:pointer;font-size:14px}
+.tab.on{background:var(--acc);border-color:var(--acc);font-weight:600}
+.chip.on{background:var(--card2);border-color:var(--acc)}
+.row{display:flex;gap:8px;margin:8px 0 14px;flex-wrap:wrap}
+input[type=search],input[type=text],select{flex:1;min-width:140px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;outline:none}
+input:focus,select:focus{border-color:var(--acc)}
+.btn{background:var(--card2);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}.stat small{color:var(--mut);font-size:12px}
+.grid{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;display:flex;gap:12px;padding:10px;align-items:stretch}
+.poster{width:64px;min-height:64px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:28px}
+.badge{display:inline-block;font-size:10px;background:var(--card2);padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.5px;margin-right:6px;color:var(--mut)}
+.info{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
+.t{font-weight:600;font-size:15px;line-height:1.2}
+.m{font-size:12px;color:var(--mut)}
+.card select{padding:6px;font-size:13px;border-radius:8px;min-width:0;flex:none}
+.stars{display:flex;gap:2px;cursor:pointer;font-size:16px}
+.stars span{color:#4a4570}.stars span.f{color:var(--warn)}
+.del{background:none;border:0;color:var(--mut);font-size:12px;cursor:pointer;text-align:left;padding:0}
+.top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.top select{width:auto}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
+.modal.show{display:flex}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:20px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px}
+.pick{font-size:22px;font-weight:800;text-align:center}
+</style>
+</head>
+<body>
+<h1>Watch<span>List</span> ✨</h1>
+<p class="sub">Anime · Series · K-Dramas — track what to watch next</p>
+
+<div class="stats" id="stats"></div>
+
+<div class="tabs" id="types"></div>
+<div class="row">
+  <input type="search" id="q" placeholder="Search titles or genres…">
+  <button class="btn" id="rand">🎲 Surprise me</button>
+  <button class="btn pri" id="add">+ Add</button>
+</div>
+<div class="filters" id="statuses"></div>
+<div class="grid" id="grid"></div>
+
+<div class="modal" id="addM"><div class="box">
+  <b>Add a title</b>
+  <input type="text" id="nName" placeholder="Title">
+  <select id="nType"><option value="anime">Anime</option><option value="series">Series</option><option value="kdrama">K-Drama</option></select>
+  <input type="text" id="nGenre" placeholder="Genre (optional)">
+  <div class="row" style="margin:0"><button class="btn" id="cancel">Cancel</button><button class="btn pri" id="save">Save</button></div>
+</div></div>
+
+<div class="modal" id="rndM"><div class="box">
+  <div class="m" style="text-align:center">Tonight, watch…</div>
+  <div class="pick" id="pickT"></div>
+  <div class="m" style="text-align:center" id="pickM"></div>
+  <div class="row" style="margin:0"><button class="btn" id="again">Another</button><button class="btn pri" id="pickOk">Start it</button></div>
+</div></div>
+
+<script>
+const TYPES={all:{n:"All",e:"🌟"},anime:{n:"Anime",e:"🎌"},series:{n:"Series",e:"📺"},kdrama:{n:"K-Drama",e:"🇰🇷"}};
+const STATUS={plan:"Plan to watch",watching:"Watching",done:"Completed",drop:"Dropped"};
+const SEED=[
+["Attack on Titan","anime","Action"],["Demon Slayer","anime","Action"],["Jujutsu Kaisen","anime","Supernatural"],["Fullmetal Alchemist: Brotherhood","anime","Adventure"],["Death Note","anime","Thriller"],["One Piece","anime","Adventure"],["Your Name","anime","Romance"],["Frieren: Beyond Journey's End","anime","Fantasy"],["Spy x Family","anime","Comedy"],["Steins;Gate","anime","Sci-Fi"],["Hunter x Hunter","anime","Adventure"],["Cowboy Bebop","anime","Sci-Fi"],
+["Breaking Bad","series","Crime"],["Stranger Things","series","Sci-Fi"],["The Last of Us","series","Drama"],["Game of Thrones","series","Fantasy"],["Wednesday","series","Mystery"],["Sherlock","series","Mystery"],["Friends","series","Comedy"],["The Bear","series","Drama"],["Black Mirror","series","Sci-Fi"],["Succession","series","Drama"],
+["Crash Landing on You","kdrama","Romance"],["Squid Game","kdrama","Thriller"],["Goblin","kdrama","Fantasy"],["Business Proposal","kdrama","Rom-Com"],["Reply 1988","kdrama","Slice of Life"],["Itaewon Class","kdrama","Drama"],["Vincenzo","kdrama","Crime"],["Hotel del Luna","kdrama","Fantasy"],["It's Okay to Not Be Okay","kdrama","Romance"],["Move to Heaven","kdrama","Drama"],["Weak Hero Class 1","kdrama","Action"],["When Life Gives You Tangerines","kdrama","Drama"]
+];
+const KEY="watchlist.v2";
+let items=[],ui={type:"all",status:"all",q:""};
+try{items=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("watchlist.v1")||"[]")}catch(e){}
+if(!items.length)items=SEED.map(([name,type,genre],i)=>({id:i+1,name,type,genre,status:"",rating:0}));
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}};
+const $=id=>document.getElementById(id);
+const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const c=s=>items.filter(i=>i.status===s).length;
+  $("stats").innerHTML=[["Plan",c("plan")],["Watching",c("watching")],["Done",c("done")],["Total",items.length]].map(([a,b])=>`<div class="stat"><b>${b}</b><small>${a}</small></div>`).join("");
+  $("types").innerHTML=Object.entries(TYPES).map(([k,v])=>`<button class="tab ${ui.type===k?"on":""}" data-t="${k}">${v.e} ${v.n}</button>`).join("");
+  $("statuses").innerHTML=[["all","Everything"],...Object.entries(STATUS),["","Not added"]].map(([k,v])=>`<button class="chip ${ui.status===k?"on":""}" data-s="${k}">${v}</button>`).join("");
+  const q=ui.q.toLowerCase();
+  const list=items.filter(i=>(ui.type==="all"||i.type===ui.type)&&(ui.status==="all"||i.status===ui.status)&&(!q||(i.name+" "+i.genre).toLowerCase().includes(q)));
+  $("grid").innerHTML=list.length?list.map(i=>{const h=hue(i.name);return `<div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,hsl(${h} 60% 35%),hsl(${(h+60)%360} 60% 18%))">${TYPES[i.type].e}</div>
+    <div class="info"><div class="top"><div><div class="t">${esc(i.name)}</div><div class="m"><span class="badge">${TYPES[i.type].n}</span>${esc(i.genre||"")}</div></div>
+    <select data-id="${i.id}" class="st"><option value="">+ Add</option>${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${i.status===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    ${i.status?`<div class="stars" data-id="${i.id}">${[1,2,3,4,5].map(n=>`<span data-n="${n}" class="${n<=i.rating?"f":""}">★</span>`).join("")}</div>`:""}
+    ${i.id>SEED.length?`<button class="del" data-del="${i.id}">Remove</button>`:""}</div></div>`}).join(""):`<div class="empty">Nothing here yet. Try another filter or add a title.</div>`;
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-t]");if(t){ui.type=t.dataset.t;render();return}
+  const s=e.target.closest("[data-s]");if(s){ui.status=s.dataset.s;render();return}
+  const st=e.target.closest(".stars span");if(st){const it=items.find(i=>i.id==st.parentNode.dataset.id);it.rating=it.rating==st.dataset.n?0:+st.dataset.n;save();render();return}
+  const d=e.target.closest("[data-del]");if(d){items=items.filter(i=>i.id!=d.dataset.del);save();render()}
+});
+document.addEventListener("change",e=>{if(e.target.classList.contains("st")){const it=items.find(i=>i.id==e.target.dataset.id);it.status=e.target.value;if(!it.status)it.rating=0;save();render()}});
+$("q").oninput=e=>{ui.q=e.target.value;render()};
+$("add").onclick=()=>$("addM").classList.add("show");
+$("cancel").onclick=()=>$("addM").classList.remove("show");
+$("save").onclick=()=>{const n=$("nName").value.trim();if(!n)return;items.unshift({id:Date.now(),name:n,type:$("nType").value,genre:$("nGenre").value.trim(),status:"plan",rating:0});
+  $("nName").value=$("nGenre").value;save();$("addM").classList.remove("show");ui={type:"all",status:"all",q:""};$("q").value="";render()};
+let pick=null;
+function roll(){let pool=items.filter(i=>i.status==="plan");if(!pool.length)pool=items.filter(i=>!i.status);
+  if(!pool.length){pick=null;$("pickT").textContent="Add some titles first!";$("pickM").textContent="";return}
+  pick=pool[Math.floor(Math.random()*pool.length)];$("pickT").textContent=pick.name;$("pickM").textContent=TYPES[pick.type].n+(pick.genre?" · "+pick.genre:"")}
+$("rand").onclick=()=>{roll();$("rndM").classList.add("show")};
+$("again").onclick=roll;
+$("pickOk").onclick=()=>{if(pick){pick.status="watching";save();render()}$("rndM").classList.remove("show")};
+render();
+</script>
+</body>
+</html>
